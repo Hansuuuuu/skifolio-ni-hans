@@ -969,6 +969,7 @@ const handleRejectUser = async (user) => {
               <th style={{ border: "1px solid #ddd", padding: "10px" }}>
                 {selectedUserType === "Applicants" ? "GitHub Repo" : "Company Website"}
               </th>
+              
               <th style={{ border: "1px solid #ddd", padding: "10px" }}>Details</th>
             </tr>
           </thead>
@@ -1126,6 +1127,18 @@ const handleRejectUser = async (user) => {
     <p>
       <strong>Email:</strong> {selectedUser.email}
     </p>
+    <p>
+      <strong>Website:</strong> {selectedUser.companyWebsite}
+    </p>
+    <p>
+      <strong>Contact-Person:</strong> {selectedUser.contactPerson}
+    </p>
+    <p>
+      <strong>Location:</strong> {selectedUser.location}
+    </p>
+    <p>
+      <strong>Phone:</strong> {selectedUser.phone}
+    </p>
     <h5>Posted Jobs</h5>
     <ul>
       {employerJobs.map((job, index) => (
@@ -1135,6 +1148,9 @@ const handleRejectUser = async (user) => {
           </p>
           <p>
             <strong>Location:</strong> {job.location}
+          </p>
+          <p>
+            <strong>Job Role:</strong> {job.jobRole}
           </p>
           <p>
             <button onClick={() => handleJobClick(job.id)} style={{ cursor: "pointer" }}>
@@ -1385,6 +1401,9 @@ const handleRejectUser = async (user) => {
                 <h4>Job Details</h4>
                 <p>
                   <strong>Title:</strong> {selectedJob.title}
+                </p>
+                <p>
+                  <strong>Job Role:</strong> {selectedJob.jobRole}
                 </p>
                 <p>
                   <strong>Company Name:</strong> {selectedJob.companyName}
@@ -1653,9 +1672,3 @@ const handleRejectUser = async (user) => {
 
 
 export default AdminPage;
-
-
-
-
-
-

@@ -94,10 +94,19 @@ const JobSearch = () => {
   
     const handleSearch = (e) => {
       setSearchTerm(e.target.value);
-      const filtered = jobs.filter((job) =>
-        job.title.toLowerCase().includes(e.target.value.toLowerCase()) ||
-        job.description.toLowerCase().includes(e.target.value.toLowerCase())
-      );
+      const filtered = jobs.filter((job) => {
+        // Convert search term to lowercase for case-insensitive comparison
+        const searchTerm = e.target.value.toLowerCase();
+        
+        // Safely check each property exists before using toLowerCase()
+        const titleMatch = job.title ? job.title.toLowerCase().includes(searchTerm) : false;
+        const descMatch = job.description ? job.description.toLowerCase().includes(searchTerm) : false;
+        const companyMatch = job.companyName ? job.companyName.toLowerCase().includes(searchTerm) : false;
+        const locationMatch = job.location ? job.location.toLowerCase().includes(searchTerm) : false;
+        const roleMatch = job.jobRole ? job.jobRole.toLowerCase().includes(searchTerm) : false;
+        // Return true if any field matches the search term
+        return titleMatch || descMatch || companyMatch || locationMatch || roleMatch;
+      });
       setFilteredJobs(filtered);
     };
   
@@ -108,11 +117,51 @@ const JobSearch = () => {
         sortedJobs.sort((a, b) =>
           sortOrder === "ascending" ? a.title.localeCompare(b.title) : b.title.localeCompare(a.title)
         );
-      } else if (sortType === "date") {
-        sortedJobs.sort((a, b) =>
-          sortOrder === "ascending" ? new Date(a.postingDate) - new Date(b.postingDate) : new Date(b.postingDate) - new Date(a.postingDate)
-        );
+      } 
+      else if (sortType === "date") {
+        sortedJobs.sort((a, b) => {
+          // Convert Firebase Timestamp to JS time in milliseconds
+          const dateA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0;
+          const dateB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0;
+      
+          return sortOrder === "ascending" ? dateA - dateB : dateB - dateA;
+        });
       }
+      
+      else if (sortType === "role") {
+        // Define the order of job roles for sorting
+        const roleOrder = [
+          "Front-end Developer", 
+          "Back-end Developer", 
+          "Full Stack Developer",
+          "React Developer", 
+          "Vue.js Developer", 
+          "Angular Developer",
+          "Node.js Developer", 
+          "Django Developer", 
+          "Laravel Developer",
+          "Express.js Developer", 
+          "JavaScript Engineer", 
+          "TypeScript Developer",
+          "Next.js Developer", 
+          "Nuxt.js Developer", 
+          "API Developer"
+        ];
+        
+        sortedJobs.sort((a, b) => {
+          // Get the index of each job role in our predefined order
+          const indexA = roleOrder.indexOf(a.title);
+          const indexB = roleOrder.indexOf(b.title);
+          
+          // If the role isn't in our list, put it at the end
+          const valueA = indexA === -1 ? roleOrder.length : indexA;
+          const valueB = indexB === -1 ? roleOrder.length : indexB;
+          
+          // Return the comparison based on sortOrder
+          return sortOrder === "ascending" ? valueA - valueB : valueB - valueA;
+        });
+      }
+      
   
       setFilteredJobs(sortedJobs);
     };
@@ -170,11 +219,12 @@ const JobSearch = () => {
     
         const jobData = jobDoc.data();
         const companyName = jobData.companyName;
-    
+        const jobRole = jobData.jobRole;
         // 🔍 Step 2: Search all employers for matching companyName
         const employersSnapshot = await getDocs(collection(db, "employers"));
         const matchingEmployer = employersSnapshot.docs.find(
-          (doc) => doc.data().companyName === companyName
+          (doc) => doc.data().companyName === companyName,
+          (doc) => doc.data().jobRole === jobRole
         );
     
         if (matchingEmployer) {
@@ -278,6 +328,7 @@ const JobSearch = () => {
           >
             <option value="date">Sort by Date</option>
             <option value="title">Sort by Title</option>
+            {/* <option value="role">Sort by Job Role</option> */}
           </select>
 
           <h3>Highest Eligible Jobs</h3>
@@ -309,6 +360,9 @@ const JobSearch = () => {
                 <h4>{job.title}</h4>
                 <p>
                   <strong>Company:</strong> {job.companyName}
+                </p>
+                <p>
+                  <strong>JobRole:</strong> {job.jobRole}
                 </p>
                 <p>
                   <strong>Location:</strong> {job.location}
@@ -343,13 +397,16 @@ const JobSearch = () => {
                   e.currentTarget.style.boxShadow = "0 0 10px black";
                 }}
               >
+              <div className="job-posting">
                 <h4>{job.title}</h4>
-                <p>
-                  <strong>Company:</strong> {job.companyName}
-                </p>
-                <p>
-                  <strong>Location:</strong> {job.location}
-                </p>
+                <p><strong>Company:</strong> {job.companyName}</p>
+               
+
+
+                <p><strong>Job Role:</strong> {job.jobRole}</p>
+                <p><strong>Location:</strong> {job.location}</p>
+              </div>
+
               </div>
             ))}
           </div>
@@ -374,11 +431,14 @@ const JobSearch = () => {
           }}
         >
           <h3>{expandedJob.title}</h3>
+          <p><strong>Date Created:</strong> {new Date(expandedJob.createdAt.seconds * 1000).toLocaleDateString()}</p>
           <p>
             <strong>Company:</strong> {expandedJob.companyName}
           </p>
-          <p>{expandedJob.description}</p>
-
+          <p><strong>Job Description:</strong>{expandedJob.description}</p>
+          <p>
+                  <strong>Job Role:</strong> {expandedJob.jobRole}
+                </p>
           {employerDetails && (
             <div
               style={{

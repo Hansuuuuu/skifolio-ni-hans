@@ -536,7 +536,7 @@ const Auth = ({ userType, setUser }) => {
                 // Create the user account
                 userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 await sendEmailVerification(userCredential.user);
-                
+                // 8UT2PQRG7CT4X5G9A7NXZFSU
                 // Create user data based on user type
                 let userData = {
                     email,

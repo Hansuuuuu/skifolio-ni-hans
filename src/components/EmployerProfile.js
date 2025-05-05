@@ -1594,7 +1594,7 @@ const EmployerProfile = () => {
 
             {/* Applicant Modal */}
             {selectedApplicant && (
-                <div className="modal-overlay" style={{
+                <div className="modal-overlay1" style={{
                     position: 'fixed',
                     top: 0,
                     left: 0,
@@ -1606,7 +1606,7 @@ const EmployerProfile = () => {
                     alignItems: 'center',
                     zIndex: 1000
                 }}>
-                    <div className="modal-content" style={{
+                    <div className="modal-content1" style={{
                         backgroundColor: '#fff',
                         borderRadius: '10px',
                         width: '90%',
