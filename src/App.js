@@ -21,6 +21,7 @@ import Scouting from './components/Scouting';
 import EmployerSkillFilter from './components/EmployerSkillFilter';
 import AboutUs from './components/AboutUs';
 import Terms from './components/Terms';
+import FAQ from "./components/FAQ";
 const App = () => {
     const [userType, setUserType] = useState(null);
     const [user, setUser] = useState(null);
@@ -62,6 +63,7 @@ const App = () => {
                 <Route path="/filter" element={<EmployerSkillFilter />} />
                 <Route path="/about-us" element={<AboutUs/>} />
                 <Route path="/terms" element={<Terms/>} />
+                <Route path="/faq" element={<FAQ userType={userType} />} />
 
             </Routes>
         </Router>

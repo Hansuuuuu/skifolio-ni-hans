@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Terms = () => {
+const Terms = ({ onAgree, onClose, isModal = false }) => {
   const effectiveDate = new Date('2024-11-15').toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'long',
@@ -61,8 +61,10 @@ const Terms = () => {
     }
   ];
 
+  const contentClass = isModal ? "max-h-96 overflow-y-auto pr-2" : "";
+
   return (
-    <div className="max-w-4xl mx-auto bg-gray-50 rounded-xl shadow-md p-8 md:p-12">
+    <div className={`${isModal ? 'w-full' : 'max-w-4xl mx-auto'} bg-gray-50 rounded-xl shadow-md p-8 md:p-12`}>
       <header className="mb-8">
         <h1 className="text-3xl md:text-4xl font-bold text-center text-gray-800">Terms and Conditions</h1>
         <p className="text-center italic text-gray-500 mt-2">
@@ -71,7 +73,7 @@ const Terms = () => {
         <hr className="my-8 border-t border-gray-200" />
       </header>
       
-      <div className="space-y-8">
+      <div className={`space-y-8 ${contentClass}`}>
         {sections.map((section, index) => (
           <section key={index} className="pb-4">
             <h2 className="text-xl md:text-2xl font-semibold text-gray-700 mb-3">{section.title}</h2>
@@ -108,6 +110,23 @@ const Terms = () => {
           </section>
         ))}
       </div>
+      
+      {isModal && (
+        <div className="mt-8 flex justify-between">
+          <button 
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+          >
+            Close
+          </button>
+          <button 
+            onClick={onAgree}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            I Agree
+          </button>
+        </div>
+      )}
       
       <footer className="mt-12 text-center text-gray-400 text-sm">
         &copy; {new Date().getFullYear()} Skifolio. All rights reserved.

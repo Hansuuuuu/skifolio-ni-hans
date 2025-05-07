@@ -114,10 +114,28 @@ img{
     justify-content: center; /* Centers items vertically */
     height: 50vh;          /* Makes the container fill the viewport height */
 }
-.Roles{
-    margin: 50px;
-    display: flex;
-    flex-direction: row;
+
+
+.Roles {
+  margin: 50px auto;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 40px;
+  flex-wrap: wrap; /* allow wrapping if needed on mid-sized screens */
+}
+
+@media (max-width: 768px) {
+  .Roles {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .Roles button {
+    width: 100%; /* Full width on small screens */
+    max-width: 300px; /* Optional: limit the max width */
+  }
 }
 
 /* .Roles button{

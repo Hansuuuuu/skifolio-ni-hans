@@ -415,75 +415,66 @@ const JobSearch = () => {
         {expandedJob && (
         <div
           style={{
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            backgroundColor: "#fff",
-            borderRadius: "10px",
-            boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
-            width: "80%",
-            maxHeight: "80%",
-            padding: "20px",
-            zIndex: 1000,
-            overflowY: "auto",
-            animation: "fadeIn 0.3s ease",
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          backgroundColor: "#fff",
+          borderRadius: "12px",
+          boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+          width: "80%",
+          maxWidth: "80%",
+          maxHeight: "80%",
+          padding: "24px",
+          zIndex: 1000,
+          overflowY: "auto",
+          animation: "fadeIn 0.3s ease",
+          fontFamily: "sans-serif",
           }}
         >
+
           <h3>{expandedJob.title}</h3>
-          <p><strong>Date Created:</strong> {new Date(expandedJob.createdAt.seconds * 1000).toLocaleDateString()}</p>
-          <p>
-            <strong>Company:</strong> {expandedJob.companyName}
-          </p>
-          <p><strong>Job Description:</strong>{expandedJob.description}</p>
-          <p>
-                  <strong>Job Role:</strong> {expandedJob.jobRole}
-                </p>
+          <p><strong>Posted On:</strong> {new Date(expandedJob.createdAt.seconds * 1000).toLocaleDateString()}</p>
+          <p><strong>Company:</strong> {expandedJob.companyName}</p>
+          <p><strong>Role:</strong> {expandedJob.jobRole}</p>
+          <p><strong>Location:</strong> {expandedJob.location}</p>
+          <p><strong>Description:</strong> {expandedJob.description}</p>
+
           {employerDetails && (
             <div
               style={{
-                marginTop: "20px",
-                padding: "10px",
-                border: "1px solid #ccc",
-                borderRadius: "8px",
+                  marginTop: "20px",
+                  padding: "16px",
+                  border: "1px solid #eee",
+                  borderRadius: "8px",
+                  backgroundColor: "#f9f9f9",
               }}
             >
-              <h4>Company Details</h4>
-              <p>
-                <strong>Industry:</strong> {employerDetails.industry}
-              </p>
-              <p>
-                <strong>Location:</strong> {employerDetails.location}
-              </p>
-              <p>
-                <strong>Description:</strong> {employerDetails.description}
-              </p>
-              <h4>Contact Information</h4>
-              <p>
-                <strong>Contact Person:</strong> {employerDetails.contactPerson}
-              </p>
-              <p>
-                <strong>Email:</strong> {employerDetails.email}
-              </p>
-              <p>
-                <strong>Phone:</strong> {employerDetails.phone}
-              </p>
-              <div>
-                <strong>Profile:</strong>
-                <br />
-                <img
-                  src={employerDetails.profilePic || "/default-profile.png"}
-                  alt="Employer Profile"
-                  style={{
-                    width: "100px",
-                    height: "100px",
-                    borderRadius: "50%",
-                    marginTop: "10px",
-                  }}
-                />
+               <h3 style={{ marginTop: 0 }}>Company Details</h3>
+                <p><strong>Industry:</strong> {employerDetails.industry}</p>
+                <p><strong>Location:</strong> {employerDetails.location}</p>
+                <p><strong>About:</strong> {employerDetails.description}</p>
+
+               <h3 style={{ marginTop: 0 }}>Contact Information</h3>
+                <p><strong>Name:</strong> {employerDetails.contactPerson}</p>
+                <p><strong>Email:</strong> {employerDetails.email}</p>
+                <p><strong>Phone:</strong> {employerDetails.phone}</p>
+
+              <div style={{ marginTop: "12px" }}>
+                  <img
+                    src={employerDetails.profilePic || "/default-profile.png"}
+                    alt="Employer Profile"
+                    style={{
+                      width: "100px",
+                      height: "100px",
+                      borderRadius: "50%",
+                      border: "2px solid #ccc",
+                      objectFit: "cover",
+                    }}
+                  />
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {appliedJobs.has(expandedJob.id) ? (
             <button

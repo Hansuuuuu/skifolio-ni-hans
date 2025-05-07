@@ -122,8 +122,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { FaUser, FaBriefcase, FaSearch, FaFileAlt, FaEye, FaBell, FaPlus, FaSignOutAlt } from "react-icons/fa";
-import "bootstrap/dist/css/bootstrap.min.css";
+import { FaUser, FaSearch, FaFileAlt, FaEye, FaBell, FaPlus, FaSignOutAlt, FaQuestionCircle } from "react-icons/fa";
 import "../styles.css"; // Custom CSS
 
 const Navbar = ({ userType, onLogout }) => {
@@ -170,68 +169,76 @@ const Navbar = ({ userType, onLogout }) => {
           }`}
         >
           <ul className="navbar-nav ms-auto">
-            {userType === "applicant" && (
-              <>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/applicant/profile">
-                    <FaUser />
-                    <span>Profile</span>
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/applicant/search-jobs">
-                    <FaSearch />
-                    <span>Search Jobs</span>
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/portfolio">
-                    <FaFileAlt />
-                    <span>Portfolio</span>
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/discovered">
-                    <FaEye />
-                    <span>Get Discovered</span>
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/notifications">
-                    <FaBell />
-                    <span>Notifications</span>
-                  </Link>
-                </li>
-              </>
-            )}
-            {userType === "employer" && (
-              <>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/employer/profile">
-                    <FaUser />
-                    <span>Profile</span>
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/employer/post-job">
-                    <FaPlus />
-                    <span>Post Job</span>
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/notifications">
-                    <FaBell />
-                    <span>Notifications</span>
-                  </Link>
-                </li>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/filter">
-                    <FaEye />
-                    <span>Discover</span>
-                  </Link>
-                </li>
-              </>
-            )}
+          {userType === "applicant" && (
+            <>
+              <li className="nav-item">
+                <Link className="nav-link" to="/applicant/profile">
+                  <FaUser />
+                  <span>Profile</span>
+                </Link>
+              </li>
+              <li className="nav-item">
+                <Link className="nav-link" to="/applicant/search-jobs">
+                  <FaSearch />
+                  <span>Search Jobs</span>
+                </Link>
+              </li>
+              <li className="nav-item">
+                <Link className="nav-link" to="/portfolio">
+                  <FaFileAlt />
+                  <span>Portfolio</span>
+                </Link>
+              </li>
+              <li className="nav-item">
+                <Link className="nav-link" to="/discovered">
+                  <FaEye />
+                  <span>Get Discovered</span>
+                </Link>
+              </li>
+              <li className="nav-item">
+                <Link className="nav-link" to="/notifications">
+                  <FaBell />
+                  <span>Notifications</span>
+                </Link>
+              </li>
+            </>
+          )}
+          {userType === "employer" && (
+            <>
+              <li className="nav-item">
+                <Link className="nav-link" to="/employer/profile">
+                  <FaUser />
+                  <span>Profile</span>
+                </Link>
+              </li>
+              <li className="nav-item">
+                <Link className="nav-link" to="/employer/post-job">
+                  <FaPlus />
+                  <span>Post Job</span>
+                </Link>
+              </li>
+              <li className="nav-item">
+                <Link className="nav-link" to="/notifications">
+                  <FaBell />
+                  <span>Notifications</span>
+                </Link>
+              </li>
+              <li className="nav-item">
+                <Link className="nav-link" to="/filter">
+                  <FaEye />
+                  <span>Discover</span>
+                </Link>
+              </li>
+            </>
+          )}
+
+          {/* FAQ for all user types */}
+          <li className="nav-item">
+              <Link className="nav-link" to="/faq">
+                <FaQuestionCircle />
+                <span>FAQ</span>
+              </Link>
+            </li>
             <li className="nav-item">
               <Link className="nav-link" to="/" onClick={onLogout}>
                 <FaSignOutAlt />

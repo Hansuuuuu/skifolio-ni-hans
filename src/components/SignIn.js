@@ -79,6 +79,8 @@ const SignIn = () => {
                         required
                         style={{ marginBottom: '10px', width: '100%' }}
                     />
+
+                    
                     <div style={{ position: 'relative', width: '100%', marginBottom: '10px' }}>
                         <input
                             className='inputs'
@@ -88,25 +90,29 @@ const SignIn = () => {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
-                            style={{ width: '100%', marginLeft: '-2px' }}
+                            style={{
+                                width: '100%',
+                                marginLeft: '-2px'
+                            }}
                         />
-                        <button
-                            type="button"
+                        <span
                             onClick={() => setShowPassword(!showPassword)}
                             style={{
                                 position: 'absolute',
-                                right: '10px',
+                                right: '15px',
                                 top: '50%',
                                 transform: 'translateY(-50%)',
-                                background: 'none',
-                                border: 'none',
                                 cursor: 'pointer',
-                                color: 'black',
+                                fontSize: '14px',
+                                color: 'gray',
+                                userSelect: 'none',
+                                marginLeft: '-2px'
                             }}
                         >
                             {showPassword ? 'Hide' : 'Show'}
-                        </button>
+                        </span>
                     </div>
+
                     <button className="input-submit" type="submit">Log In</button>
                     <p onClick={handleForgotPassword} style={{ marginTop: '10px', cursor: 'pointer', color: 'blue', textDecoration: 'underline' }}>Forgot Password?</p>
                 </form>

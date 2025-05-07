@@ -426,21 +426,222 @@ import {
     sendEmailVerification, 
     sendPasswordResetEmail
 } from 'firebase/auth';
-import { writeBatch,doc, setDoc, getDoc } from 'firebase/firestore';
+import { writeBatch, doc, setDoc, getDoc } from 'firebase/firestore';
 
+// Updated Modal Component - Enhanced to match expandedJob style
+const Modal = ({ isOpen, onClose, children }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop with click-to-close */}
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-50" 
+        onClick={onClose}
+      ></div>
+      
+      {/* Modal content - Now using the expandedJob styling */}
+      <div 
+        style={{
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          backgroundColor: "#fff",
+          borderRadius: "12px",
+          boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+          width: "80%",
+          maxWidth: "800px",
+          maxHeight: "80vh",
+          padding: "24px",
+          zIndex: 1000,
+          overflowY: "auto",
+          animation: "fadeIn 0.3s ease",
+          fontFamily: "sans-serif",
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
+
+// Terms Component - Updated to match expandedJob style
+const Terms = ({ onAgree, onClose }) => {
+  const effectiveDate = new Date('2024-11-15').toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  const sections = [
+    {
+      title: "1. Acceptance of Terms",
+      content: "By accessing or using Skifolio, you agree to be bound by these Terms and Conditions. If you do not agree, please do not register, use, or access our services."
+    },
+    {
+      title: "2. Account Eligibility",
+      content: "You must be at least 13 years old to create an account. Employers must submit valid business documents to verify company identity."
+    },
+    {
+      title: "3. Account Responsibilities",
+      content: "Keep your login credentials secure and confidential. Immediately report unauthorized access or breaches. You are responsible for all activities that occur under your account.",
+      list: true
+    },
+    {
+      title: "4. User Conduct",
+      content: "You agree not to:",
+      listItems: [
+        "Upload false or misleading information.",
+        "Use Skifolio for unlawful or abusive purposes.",
+        "Violate intellectual property rights of others."
+      ]
+    },
+    {
+      title: "5. Content Ownership",
+      content: "All content you upload remains your intellectual property. By submitting content to Skifolio, you grant us a license to display and share it within the scope of the platform's purpose."
+    },
+    {
+      title: "6. Employer Verification",
+      content: "Employers must upload valid business permits and company details. These documents are reviewed and stored securely for verification purposes."
+    },
+    {
+      title: "7. Account Approval",
+      content: "All accounts are subject to verification and approval. Skifolio reserves the right to reject or suspend accounts that do not meet platform standards or violate these terms."
+    },
+    {
+      title: "8. Termination",
+      content: "We may suspend or terminate your account for violations of these Terms, misuse of the platform, or at our discretion with or without prior notice."
+    },
+    {
+      title: "9. Limitation of Liability",
+      content: "Skifolio is provided \"as is\" and we make no warranties regarding its accuracy, security, or availability. We are not liable for any indirect or consequential damages arising from the use of our platform."
+    },
+    {
+      title: "10. Changes to Terms",
+      content: "We may revise these Terms at any time. Continued use of Skifolio constitutes acceptance of the updated terms. We encourage users to review this page regularly."
+    },
+    {
+      title: "11. Contact Us",
+      content: "For questions or concerns regarding these Terms, please contact us at support@skifolio.com.",
+      hasEmail: true
+    }
+  ];
+
+  return (
+    <>
+      <h3 style={{ fontSize: "1.5rem", fontWeight: "bold", marginBottom: "16px" }}>Terms and Conditions</h3>
+      <p style={{ fontStyle: "italic", color: "#666", marginBottom: "16px" }}>
+        Effective Date: {effectiveDate}
+      </p>
+      <hr style={{ margin: "16px 0", border: "0", borderTop: "1px solid #eee" }} />
+      
+      <div style={{ maxHeight: "50vh", overflowY: "auto", padding: "8px 4px", marginBottom: "20px" }}>
+        {sections.map((section, index) => (
+          <div key={index} style={{ marginBottom: "20px" }}>
+            <h4 style={{ fontSize: "1.1rem", fontWeight: "600", color: "#333", marginBottom: "8px" }}>
+              {section.title}
+            </h4>
+            
+            {!section.listItems && !section.list && (
+              <p style={{ fontSize: "0.95rem", lineHeight: "1.5", color: "#444" }}>
+                {section.content}
+                {section.hasEmail && (
+                  <a 
+                    href="mailto:support@skifolio.com" 
+                    style={{ color: "#007bff", textDecoration: "underline" }}
+                  >
+                    support@skifolio.com
+                  </a>
+                )}
+              </p>
+            )}
+            
+            {section.list && (
+              <ul style={{ listStyleType: "disc", paddingLeft: "20px", fontSize: "0.95rem", lineHeight: "1.5", color: "#444" }}>
+                <li style={{ marginBottom: "4px" }}>Keep your login credentials secure and confidential.</li>
+                <li style={{ marginBottom: "4px" }}>Immediately report unauthorized access or breaches.</li>
+                <li style={{ marginBottom: "4px" }}>You are responsible for all activities that occur under your account.</li>
+              </ul>
+            )}
+            
+            {section.listItems && (
+              <>
+                <p style={{ fontSize: "0.95rem", lineHeight: "1.5", color: "#444", marginBottom: "8px" }}>
+                  {section.content}
+                </p>
+                <ul style={{ listStyleType: "disc", paddingLeft: "20px", fontSize: "0.95rem", lineHeight: "1.5", color: "#444" }}>
+                  {section.listItems.map((item, i) => (
+                    <li key={i} style={{ marginBottom: "4px" }}>{item}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+      
+      <div style={{ marginTop: "20px", display: "flex", justifyContent: "space-between" }}>
+        <button 
+          onClick={onClose}
+          style={{
+            padding: "10px 16px",
+            borderRadius: "5px",
+            border: "1px solid #ccc",
+            background: "#918e8e",
+            cursor: "pointer"
+          }}
+        >
+          Close
+        </button>
+        <button 
+          onClick={onAgree}
+          style={{
+            padding: "10px 16px",
+            borderRadius: "5px",
+            backgroundColor: "#007bff",
+            color: "#fff",
+            border: "none",
+            cursor: "pointer"
+          }}
+        >
+          I Agree
+        </button>
+      </div>
+      
+      <div style={{ marginTop: "16px", textAlign: "center", fontSize: "0.8rem", color: "#999" }}>
+        &copy; {new Date().getFullYear()} Skifolio. All rights reserved.
+      </div>
+    </>
+  );
+};
+
+// Main Auth Component
 const Auth = ({ userType, setUser }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [name, setName] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [githubRepo, setGithubRepo] = useState('');
     const [companyName, setCompanyName] = useState('');
     const [companyWebsite, setCompanyWebsite] = useState('');
-    const [isSignUp, setIsSignUp] = useState(true);
+    const [isSignUp, setIsSignUp] = useState(true); // Keeping this state for internal logic
     const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [resetEmail, setResetEmail] = useState('');
     const [verifying, setVerifying] = useState(false);
     const navigate = useNavigate();
+    const [checkboxChecked, setCheckboxChecked] = useState(false);
+    
+    // State for modal
+    const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+
+    const handleAgree = () => {
+        setAgreedToTerms(true);
+        setCheckboxChecked(true);
+        setIsTermsModalOpen(false);
+    };
 
     const verifyGithubOwnership = async (repoUrl, userEmail) => {
         try {
@@ -496,12 +697,18 @@ const Auth = ({ userType, setUser }) => {
             setCompanyWebsite('');
         }
     };
+    
+    const handleTermsClick = () => {
+        // Display alert before opening terms modal
+        alert('Please read our Terms and Conditions carefully before proceeding with registration.\n\nYou must click "I Agree" at the bottom of the terms to enable the checkbox and continue with registration.');
+        setIsTermsModalOpen(true);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
     
         if (isSignUp && !agreedToTerms) {
-            alert('Please accept the terms and conditions.');
+            alert('Please read and accept the Terms and Conditions before signing up.');
             return;
         }
     
@@ -536,7 +743,7 @@ const Auth = ({ userType, setUser }) => {
                 // Create the user account
                 userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 await sendEmailVerification(userCredential.user);
-                // 8UT2PQRG7CT4X5G9A7NXZFSU
+                
                 // Create user data based on user type
                 let userData = {
                     email,
@@ -675,17 +882,91 @@ const Auth = ({ userType, setUser }) => {
 
                     <input className="inputs" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ marginBottom: '10px', width: '100%' }} />
                     
-                    <div style={{ position: 'relative', width: '100%', marginBottom: '10px',  display: "flex", flexDirection: "column", alignItems: "center" }}>
-                        <input className="inputs" type={showPassword ? 'text' : 'password'} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ width: '100%' }} />
-                        <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'black' }}>
+                    <div style={{ position: 'relative', width: '100%', marginBottom: '10px' }}>
+                        <input
+                            className='inputs'
+                            id='password'
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            style={{
+                                width: '100%',
+                                paddingRight: '60px', // create space for the button
+                                boxSizing: 'border-box',
+                                marginLeft: '-2px'
+                            }}
+                        />
+                        <span
+                            onClick={() => setShowPassword(!showPassword)}
+                            style={{
+                                position: 'absolute',
+                                right: '15px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                color: 'gray',
+                                userSelect: 'none',
+                                marginLeft: '-2px'
+                            }}
+                        >
                             {showPassword ? 'Hide' : 'Show'}
-                        </button>
+                        </span>
                     </div>
+
+                    {isSignUp && (
+                        <div style={{ position: 'relative', width: '100%', marginBottom: '10px' }}>
+                            <input
+                                className='inputs'
+                                id='confirmPassword'
+                                type={showConfirmPassword ? "text" : "password"}
+                                placeholder="Confirm Password"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                required
+                                style={{
+                                    width: '100%',
+                                    paddingRight: '60px', // create space for the button
+                                    boxSizing: 'border-box',
+                                    marginLeft: '-2px'
+                                }}
+                            />
+                            <span
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                style={{
+                                    position: 'absolute',
+                                    right: '15px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    color: 'gray',
+                                    userSelect: 'none',
+                                    marginLeft: '-2px'
+                                }}
+                            >
+                                {showConfirmPassword ? 'Hide' : 'Show'}
+                            </span>
+                        </div>
+                    )}
 
                     {isSignUp && userType === 'applicant' && (
                         <>
                             <input className="inputs" type="text" placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} required style={{ marginBottom: '10px', width: '100%' }} />
                             <input className="inputs" type="text" placeholder="GitHub Repository URL" value={githubRepo} onChange={(e) => setGithubRepo(e.target.value)} required style={{ marginBottom: '10px', width: '100%' }} />
+                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
+                            <div style={{ width: '100%', marginBottom: '10px', position: 'relative' }}>
+                                <span className="tooltip-exclamation">!</span>
+                                <div className="tooltip-text">
+                                    Please enter the full URL to your GitHub repository.<br />
+                                    Example: <code>https://github.com/username/repository-name</code><br /><br />
+                                    This is required so the system can access your portfolio for scoring.
+                                </div>
+                                <strong style={{ marginLeft: '10px' }}>GitHub Repository URL</strong>
+                            </div>
+                        </div>
                         </>
                     )}
 
@@ -697,27 +978,85 @@ const Auth = ({ userType, setUser }) => {
                     )}
 
                     {isSignUp && (
-                        <div style={{ marginBottom: '20px' }}>
-                            <input type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} style={{ marginRight: '5px' }} />
-                            <label>
-                                I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer">Terms and Conditions</a>
-                            </label>
+                        <div style={{ marginBottom: '20px', width: '100%', display: 'flex', alignItems: 'flex-start', flexDirection: 'column' }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                                <input 
+                                    type="checkbox" 
+                                    id="termsCheckbox"
+                                    checked={checkboxChecked} 
+                                    readOnly
+                                    title="You must read and agree to the Terms and Conditions first"
+                                    style={{ 
+                                        marginRight: '8px', 
+                                        marginTop: '4px',
+                                        cursor: 'not-allowed', // Changes cursor to indicate it's not clickable
+                                        opacity: checkboxChecked ? '1' : '0.6' // Makes it look disabled when not checked
+                                    }} 
+                                />
+                                <label htmlFor="termsCheckbox" style={{ textAlign: 'left' }}>
+                                    I agree to the{' '}
+                                    <span 
+                                        onClick={handleTermsClick}
+                                        style={{
+                                            textDecoration: 'underline',
+                                            color: 'blue',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        Terms and Conditions
+                                    </span>
+                                </label>
+                            </div>
                         </div>
                     )}
                     
-                    <button type="submit" className="input submit" disabled={verifying}>
+                    <button 
+                        type="submit" 
+                        className="input submit" 
+                        disabled={verifying || (isSignUp && !checkboxChecked)}
+                        style={{ 
+                            marginBottom: '10px', 
+                            width: '100%',
+                            opacity: (isSignUp && !checkboxChecked) ? '0.6' : '1', // Visual feedback for disabled state
+                            cursor: (isSignUp && !checkboxChecked) ? 'not-allowed' : 'pointer' // Change cursor when disabled
+                        }}
+                        title={isSignUp && !checkboxChecked ? "You must agree to the Terms and Conditions first" : ""}
+                    >
                         {verifying ? 'Verifying...' : (isSignUp ? 'Sign Up' : 'Sign In')}
                     </button>
-                    <Link to="/select">
-                        <button className="submit">Cancel</button>
-                    </Link>
+
+                    <div style={{ width: '100%', marginTop: '10px' }}>
+                        <Link to="/select">
+                            <button type="button" className="submit">Cancel</button>
+                        </Link>
+                    </div>
+                    
                     {!isSignUp && (
-                        <button type="button" onClick={handleForgotPassword} style={{ background: 'none', border: 'none', color: 'blue', cursor: 'pointer', marginTop: '10px' }}>
-                            Forgot Password?
-                        </button>
+                        <div style={{ marginTop: '10px', width: '100%', textAlign: 'center' }}>
+                            <button 
+                                type="button" 
+                                onClick={handleForgotPassword} 
+                                style={{ 
+                                    background: 'none', 
+                                    border: 'none', 
+                                    color: 'blue', 
+                                    cursor: 'pointer' 
+                                }}
+                            >
+                                Forgot Password?
+                            </button>
+                        </div>
                     )}
                 </form>
             </div>
+
+            {/* Terms Modal */}
+            <Modal isOpen={isTermsModalOpen} onClose={() => setIsTermsModalOpen(false)}>
+                <Terms 
+                    onAgree={handleAgree} 
+                    onClose={() => setIsTermsModalOpen(false)} 
+                />
+            </Modal>
         </div>
     );
 };
