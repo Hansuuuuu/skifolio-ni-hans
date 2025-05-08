@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { db, auth } from "../firebase";
-import { collection, getDocs, doc, getDoc, setDoc, deleteDoc, Timestamp,addDoc } from "firebase/firestore";
-import {serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, setDoc, deleteDoc, Timestamp, addDoc } from "firebase/firestore";
+import { serverTimestamp } from "firebase/firestore";
+
 const JobSearch = () => {
     const [jobs, setJobs] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
@@ -12,6 +13,12 @@ const JobSearch = () => {
     const [appliedJobs, setAppliedJobs] = useState(new Set()); // Track applied jobs
     const [sortOrder, setSortOrder] = useState("ascending");
     const [sortType, setSortType] = useState("date");
+    
+    // New state for reporting feature
+    const [showReportForm, setShowReportForm] = useState(false);
+    const [reportReason, setReportReason] = useState("");
+    const [reportDetails, setReportDetails] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
   
     useEffect(() => {
       const fetchUserAverageScore = async () => {
@@ -63,6 +70,7 @@ const JobSearch = () => {
         setAppliedJobs(appliedJobIds);
       }
     };
+    
     const notifyEmployerOfNewApplicant = async (employerUid, jobTitle, applicantName) => {
       const notifRef = collection(db, "employers", employerUid, "notifications");
     
@@ -162,7 +170,6 @@ const JobSearch = () => {
         });
       }
       
-  
       setFilteredJobs(sortedJobs);
     };
   
@@ -183,12 +190,7 @@ const JobSearch = () => {
         }
     
         const userData = userSnap.data();
-        const { name,certifications = [], githubRepo, email } = userData;
-    
-        // if (!resumeURL) {
-        //   alert("No Resume Applied");
-        //   return;
-        // }
+        const { name, certifications = [], githubRepo, email } = userData;
     
         // Get submissions
         const submissionsRef = collection(db, "applicants", userId, "submissions");
@@ -210,7 +212,7 @@ const JobSearch = () => {
     
         await setDoc(applicationRef, applicationData);
     
-        // 🔍 Step 1: Get the job document to find its companyName
+        // Get the job document to find its companyName
         const jobDoc = await getDoc(doc(db, "jobs", jobId));
         if (!jobDoc.exists()) {
           console.error("Job not found!");
@@ -220,7 +222,7 @@ const JobSearch = () => {
         const jobData = jobDoc.data();
         const companyName = jobData.companyName;
         const jobRole = jobData.jobRole;
-        // 🔍 Step 2: Search all employers for matching companyName
+        // Search all employers for matching companyName
         const employersSnapshot = await getDocs(collection(db, "employers"));
         const matchingEmployer = employersSnapshot.docs.find(
           (doc) => doc.data().companyName === companyName,
@@ -230,7 +232,7 @@ const JobSearch = () => {
         if (matchingEmployer) {
           const employerUid = matchingEmployer.id;
     
-          // 📣 Step 3: Notify the employer
+          // Notify the employer
           await notifyEmployerOfNewApplicant(employerUid, jobTitle, name);
         } else {
           console.warn("No matching employer found for company:", companyName);
@@ -243,7 +245,6 @@ const JobSearch = () => {
       }
     };
     
-  
     const handleCancelApplication = async (jobId, e) => {
       e.stopPropagation();
       if (auth.currentUser) {
@@ -260,7 +261,191 @@ const JobSearch = () => {
         }
       }
     };
-  
+    
+    // New function to handle job reporting
+    const handleReportJob = async (e) => {
+      e.preventDefault();
+      
+      if (!auth.currentUser) {
+        alert("You must be logged in to report jobs.");
+        return;
+      }
+      
+      if (!reportReason) {
+        alert("Please select a reason for reporting this job.");
+        return;
+      }
+      
+      if (!reportDetails || reportDetails.trim().length < 10) {
+        alert("Please provide more details about the violation.");
+        return;
+      }
+      
+      setIsSubmitting(true);
+      
+      try {
+        const userId = auth.currentUser.uid;
+        const userRef = doc(db, "applicants", userId);
+        const userSnap = await getDoc(userRef);
+        
+        if (!userSnap.exists()) {
+          alert("User profile not found!");
+          setIsSubmitting(false);
+          return;
+        }
+        
+        const userData = userSnap.data();
+        
+        // Create the report in a new collection
+        const reportsRef = collection(db, "job_reports");
+        await addDoc(reportsRef, {
+          jobId: expandedJob.id,
+          jobTitle: expandedJob.title,
+          companyName: expandedJob.companyName,
+          employerId: expandedJob.employerId,
+          reportedBy: userId,
+          reporterName: userData.name || "Anonymous User",
+          reporterEmail: userData.email || "No email provided",
+          reason: reportReason,
+          details: reportDetails,
+          status: "pending", // pending, reviewed, resolved
+          createdAt: serverTimestamp(),
+        });
+        
+        // Also create a subcollection of reports within the job document
+        const jobReportRef = collection(db, "jobs", expandedJob.id, "reports");
+        await addDoc(jobReportRef, {
+          reportedBy: userId,
+          reason: reportReason,
+          details: reportDetails,
+          status: "pending",
+          createdAt: serverTimestamp(),
+        });
+        
+        // Notify admin about the report
+        const adminNotificationsRef = collection(db, "admin_notifications");
+        await addDoc(adminNotificationsRef, {
+          type: "job_report",
+          jobId: expandedJob.id,
+          jobTitle: expandedJob.title,
+          companyName: expandedJob.companyName,
+          reportReason: reportReason,
+          reportedAt: serverTimestamp(),
+          status: "unread",
+        });
+        
+        alert("Thank you for your report. Our team will review it shortly.");
+        setShowReportForm(false);
+        setReportReason("");
+        setReportDetails("");
+      } catch (error) {
+        console.error("Error submitting job report:", error);
+        alert("There was an error submitting your report. Please try again.");
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+    
+    // Function to toggle report form
+    const toggleReportForm = (e) => {
+      e.stopPropagation();
+      setShowReportForm(!showReportForm);
+    };
+    
+    // Report form JSX
+    const reportForm = (
+      <div 
+        style={{
+          marginTop: "20px",
+          padding: "16px",
+          border: "1px solid #eee",
+          borderRadius: "8px",
+          backgroundColor: "#f9f9f9",
+        }}
+      >
+        <h3 style={{ marginTop: 0, color: "#d32f2f" }}>Report Job Listing</h3>
+        <form onSubmit={handleReportJob}>
+          <div style={{ marginBottom: "16px" }}>
+            <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold" }}>
+              Reason for Report:*
+            </label>
+            <select
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px",
+                borderRadius: "4px",
+                border: "1px solid #ddd",
+              }}
+              required
+            >
+              <option value="">-- Select a reason --</option>
+              <option value="Discriminatory content">Discriminatory content</option>
+              <option value="Misleading information">Misleading information</option>
+              <option value="Inappropriate salary/compensation">Inappropriate salary/compensation</option>
+              <option value="Scam/Fraud">Scam or fraudulent posting</option>
+              <option value="Duplicate posting">Duplicate posting</option>
+              <option value="Unprofessional language">Unprofessional language</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          
+          <div style={{ marginBottom: "16px" }}>
+            <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold" }}>
+              Details:*
+            </label>
+            <textarea
+              value={reportDetails}
+              onChange={(e) => setReportDetails(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px",
+                borderRadius: "4px",
+                border: "1px solid #ddd",
+                minHeight: "100px",
+                resize: "vertical",
+              }}
+              placeholder="Please provide specific details about the violation..."
+              required
+            />
+          </div>
+          
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              style={{
+                backgroundColor: "#d32f2f",
+                color: "#fff",
+                padding: "10px 16px",
+                borderRadius: "4px",
+                border: "none",
+                cursor: isSubmitting ? "not-allowed" : "pointer",
+                opacity: isSubmitting ? 0.7 : 1,
+              }}
+            >
+              {isSubmitting ? "Submitting..." : "Submit Report"}
+            </button>
+            
+            <button
+              type="button"
+              onClick={toggleReportForm}
+              style={{
+                backgroundColor: "#757575",
+                color: "#fff",
+                padding: "10px 16px",
+                borderRadius: "4px",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    );
 
   return (
     <div style={{ position: "relative" }}>
@@ -268,7 +453,6 @@ const JobSearch = () => {
         id="job-search-container"
         style={{
           padding: "20px",
-        //   filter: expandedJob ? "blur(4px)" : "none", needs fixing
           transition: "filter 0.3s ease-in-out",
         }}
       >
@@ -328,7 +512,6 @@ const JobSearch = () => {
           >
             <option value="date">Sort by Date</option>
             <option value="title">Sort by Title</option>
-            {/* <option value="role">Sort by Job Role</option> */}
           </select>
 
           <h3>Highest Eligible Jobs</h3>
@@ -400,13 +583,9 @@ const JobSearch = () => {
               <div className="job-posting">
                 <h4>{job.title}</h4>
                 <p><strong>Company:</strong> {job.companyName}</p>
-               
-
-
                 <p><strong>Job Role:</strong> {job.jobRole}</p>
                 <p><strong>Location:</strong> {job.location}</p>
               </div>
-
               </div>
             ))}
           </div>
@@ -432,7 +611,6 @@ const JobSearch = () => {
           fontFamily: "sans-serif",
           }}
         >
-
           <h3>{expandedJob.title}</h3>
           <p><strong>Posted On:</strong> {new Date(expandedJob.createdAt.seconds * 1000).toLocaleDateString()}</p>
           <p><strong>Company:</strong> {expandedJob.companyName}</p>
@@ -475,48 +653,79 @@ const JobSearch = () => {
                 </div>
               </div>
             )}
-
-          {appliedJobs.has(expandedJob.id) ? (
-            <button
-              onClick={(e) => handleCancelApplication(expandedJob.id, e)}
-              style={{
-                backgroundColor: "red",
-                color: "white",
-                padding: "10px",
-                marginRight: "10px",
-                borderRadius: "5px",
-                marginTop: "10px"
-              }}
-            >
-              Cancel Application
-            </button>
+            
+          {/* Report job feature */}
+          {showReportForm ? (
+            reportForm
           ) : (
             <button
-              onClick={(e) => handleApply(expandedJob.id, expandedJob.title, e)}
+              onClick={toggleReportForm}
               style={{
-                backgroundColor: "#007bff",
+                backgroundColor: "#ff9800",
                 color: "#fff",
-                padding: "10px",
-                marginRight: "10px",
-                borderRadius: "5px",
-                marginTop: "10px"
+                padding: "8px 14px",
+                borderRadius: "4px",
+                border: "none",
+                cursor: "pointer",
+                marginTop: "20px",
+                display: "flex",
+                alignItems: "center",
+                fontSize: "14px",
               }}
             >
-              Apply
+              <span style={{ marginRight: "6px" }}>⚠️</span> Report Job Listing
             </button>
           )}
 
-          <button onClick={() => setExpandedJob(null)} style={{ padding: "10px", borderRadius: "5px", marginTop: "10px"  }}>
-            Close
-          </button>
+          <div style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
+            {appliedJobs.has(expandedJob.id) ? (
+              <button
+                onClick={(e) => handleCancelApplication(expandedJob.id, e)}
+                style={{
+                  backgroundColor: "red",
+                  color: "white",
+                  padding: "10px",
+                  borderRadius: "5px",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel Application
+              </button>
+            ) : (
+              <button
+                onClick={(e) => handleApply(expandedJob.id, expandedJob.title, e)}
+                style={{
+                  backgroundColor: "#007bff",
+                  color: "#fff",
+                  padding: "10px",
+                  borderRadius: "5px",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                Apply
+              </button>
+            )}
+
+            <button 
+              onClick={() => setExpandedJob(null)} 
+              style={{ 
+                padding: "10px", 
+                borderRadius: "5px", 
+                border: "1px solid #ddd",
+                backgroundColor: "#007bff",
+                cursor: "pointer", 
+              }}
+            >
+              Close
+            </button>
+          </div>
         </div>
-        
       )}
-        </div>
+      </div>
     </div>
   );
-  
 };
-
 
 export default JobSearch;

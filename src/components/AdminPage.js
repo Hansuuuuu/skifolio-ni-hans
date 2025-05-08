@@ -20,8 +20,6 @@ const AdminPage = () => {
   const [password, setPassword] = useState("");
   const [employers, setEmployers] = useState([]);
   const [applicants, setApplicants] = useState([]);
-  const [showDisabledAccounts, setShowDisabledAccounts] = useState(false);
-  const [disabledAccounts, setDisabledAccounts] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [selectedUserType, setSelectedUserType] = useState("Applicants");
   const [selectedUser, setSelectedUser] = useState(null);
@@ -49,7 +47,6 @@ const AdminPage = () => {
   const [viewingHired, setViewingHired] = useState(false);
   const [applicantshow,setShowApplicant] = useState([]);
   // Function to add history record with a timestamp
-  
   const addHistoryRecord = async (event, details) => {
     const timestamp = new Date().toISOString(); // Get current timestamp
     setHistoryData((prevHistory) => [
@@ -295,26 +292,6 @@ if (showDeletedFiles) fetchDeletedFiles();
   fetchUsersToApprove();
 }, [showDeletedFiles]); 
 
-const fetchDisabledAccounts = async () => {
-  try {
-    const disabledQuery = query(
-      collection(db, "users"),
-      where("status", "==", "disabled")
-    );
-    const snapshot = await getDocs(disabledQuery);
-    const accounts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    setDisabledAccounts(accounts);
-  } catch (error) {
-    console.error("Error fetching disabled accounts:", error);
-  }
-};
-
-useEffect(() => {
-  if (showDisabledAccounts) {
-    fetchDisabledAccounts();
-  }
-  // fetchUsersToApprove(); // Uncomment when this function is defined
-}, [showDisabledAccounts]);
 
 // useEffect(() => {
 //   const fetchHistoryData = async () => {
@@ -563,29 +540,6 @@ const handleRejectUser = async (user) => {
       console.error("Error fetching hired jobs:", error);
     }
   };
-
-
-  useEffect(() => {
-    const fetchDisabledAccounts = async () => {
-      try {
-        const disabledQuery = query(
-          collection(db, "users"),
-          where("status", "==", "disabled")
-        );
-        const snapshot = await getDocs(disabledQuery);
-        const accounts = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setDisabledAccounts(accounts);
-        console.log("Disabled accounts:", accounts);
-      } catch (error) {
-        console.error("Error fetching disabled accounts:", error);
-      }
-    };
-
-    fetchDisabledAccounts();
-  }, []);
   
   
   
@@ -984,7 +938,6 @@ const handleHiredApplicantClick = (applicant) => {
         setUserApproval(false);
         setShowDeletedFiles(false);
         setHistoryVisible(false);
-        setDisabledAccounts(false);
         setShowAnnouncement(false);
       }}
       style={{
@@ -1012,7 +965,6 @@ const handleHiredApplicantClick = (applicant) => {
         setShowDeletedFiles(false);
         setHistoryVisible(false);
         setShowAnnouncement(false);
-        setDisabledAccounts(false);
         setShowApplicant(true);
       }}
       style={{
@@ -1039,7 +991,6 @@ const handleHiredApplicantClick = (applicant) => {
         setUserApproval(false);
         setShowDeletedFiles(false);
         setHistoryVisible(false);
-        setDisabledAccounts(false);
         setShowAnnouncement(false);
       }}
       style={{
@@ -1084,7 +1035,6 @@ const handleHiredApplicantClick = (applicant) => {
         setIsUserClassVisible(false);
         setSelectedUserType(false);
         setHistoryVisible(false);
-        setDisabledAccounts(false); 
         setShowAnnouncement(false);
       }}
       style={{
@@ -1105,34 +1055,6 @@ const handleHiredApplicantClick = (applicant) => {
 
     <button
       onClick={() => {
-        setDisabledAccounts(true);
-        setShowDeletedFiles(false);
-        setShowDashboard(false);
-        setUserApproval(false);
-        setIsUserClassVisible(false);
-        setSelectedUserType("");
-        setHistoryVisible(false);
-        setShowAnnouncement(false);
-      }}
-      style={{
-        display: "block",
-        width: "100%",
-        marginBottom: "10px",
-        padding: "10px",
-        backgroundColor: showDisabledAccounts ? "#007bff" : "#ddd",
-        color: "#fff",
-        border: "none",
-        borderRadius: "5px",
-        cursor: "pointer",
-      }}
-    >
-      View Disabled Accounts
-    </button>
-
-
-    <button
-      onClick={() => {
-        setDisabledAccounts(false);
         setShowDeletedFiles(true);
         setShowDashboard(false);
         setUserApproval(false);
@@ -1192,7 +1114,6 @@ const handleHiredApplicantClick = (applicant) => {
         setShowDeletedFiles(false);
         setUserApproval(false);
         setIsUserClassVisible(false);
-        setDisabledAccounts(false);
         setSelectedUserType("");
       }}
       style={{
