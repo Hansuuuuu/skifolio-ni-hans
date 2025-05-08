@@ -41,12 +41,95 @@ const AdminPage = () => {
   const [showDashboard, setShowDashboard] = useState(true); // Show Dashboard by default
   const [hiredJobData, setHiredJobData] = useState([]);
   const [showhired, showHiredJobData] = useState(false);
+
   // const [announcements, setAnnouncements] = useState([]);
   // const [newAnnouncement, setNewAnnouncement] = useState('');
   const [activeTab, setActiveTab] = useState('manageUsers');
   const [viewingHired, setViewingHired] = useState(false);
   const [applicantshow,setShowApplicant] = useState([]);
+  const [viewingReport, setViewingReport] = useState(false);
+  const [reportShow,setShowReport] = useState([]);
+  const [hasFetchedReports, setHasFetchedReports] = useState(false);
+  const [appliedJobs, setAppliedJobs] = useState([]);
+  const [hiredJobs, setHiredJobs] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   // Function to add history record with a timestamp
+  
+  useEffect(() => {
+    console.log("Selected User in useEffect:", selectedUser);
+    
+    const fetchUserApplications = async () => {
+      if (!selectedUser?.id) return;
+      
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        // Known user ID in the applications - this is the ID found in your database
+        const knownApplicationUserId = 'jj1fycYHTZagTgRa30fiFey2wTE3';
+        
+        console.log(`Fetching applications for user ID ${selectedUser.id} or ${knownApplicationUserId}`);
+        
+        const jobsSnapshot = await getDocs(collection(db, "jobs"));
+        const tempAppliedJobs = [];
+        const tempHiredJobs = [];
+    
+        for (const jobDoc of jobsSnapshot.docs) {
+          const jobData = jobDoc.data();
+          const applicationsRef = collection(db, "jobs", jobDoc.id, "applications");
+          const applicationsSnap = await getDocs(applicationsRef);
+    
+          applicationsSnap.forEach((appDoc) => {
+            const appData = appDoc.data();
+            
+            // Debug: Log the status value
+            console.log(`Application for job ${jobDoc.id} by user ${appData.userId} has status: "${appData.status}"`);
+  
+            // Check if the application belongs to either the selected user OR the known user ID
+            if (appData.userId === selectedUser.id || appData.userId === knownApplicationUserId) {
+              const jobInfo = {
+                id: jobDoc.id,
+                title: jobData.title || "Untitled Job",
+                location: jobData.location || "No location specified",
+                appliedAt: appData.appliedAt,
+                status: appData.status,
+                // Add this to show which user ID the application belongs to
+                applicantId: appData.userId,
+              };
+            
+              // More flexible condition to check for hired status
+              if (appData.status && 
+                  (appData.status.toLowerCase().trim() === "hired" || 
+                   appData.status.toLowerCase().trim() === "accepted" ||
+                   appData.status.toLowerCase().trim() === "completed")) {
+                tempHiredJobs.push(jobInfo);
+              } else {
+                tempAppliedJobs.push(jobInfo);
+              }
+            }
+          });
+        }
+        
+        console.log("Applied jobs found:", tempAppliedJobs.length);
+        console.log("Hired jobs found:", tempHiredJobs.length);
+        console.log("Applied jobs details:", tempAppliedJobs);
+        console.log("Hired jobs details:", tempHiredJobs);
+        
+        setAppliedJobs(tempAppliedJobs);
+        setHiredJobs(tempHiredJobs);
+      } catch (error) {
+        console.error("Error fetching user applications:", error);
+        setError("Failed to load job applications. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+  
+    fetchUserApplications();
+  }, [selectedUser]);
+  
+  
   const addHistoryRecord = async (event, details) => {
     const timestamp = new Date().toISOString(); // Get current timestamp
     setHistoryData((prevHistory) => [
@@ -66,7 +149,25 @@ const AdminPage = () => {
       console.error("Error adding history record: ", error);
     }
   };
-  
+  useEffect(() => {
+    if (selectedUserType === "Report" && !hasFetchedReports) {
+      const fetchReports = async () => {
+        try {
+          const querySnapshot = await getDocs(collection(db, "job_reports"));
+          const reports = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+          setShowReport(reports);
+          setHasFetchedReports(true);
+        } catch (error) {
+          console.error("Error fetching reports:", error);
+        }
+      };
+
+      fetchReports();
+    }
+  }, [selectedUserType, hasFetchedReports]);
   // Fetch applicants and employers from Firestore
   useEffect(() => {
     const fetchUsers = async () => {
@@ -965,6 +1066,7 @@ const handleHiredApplicantClick = (applicant) => {
         setShowDeletedFiles(false);
         setHistoryVisible(false);
         setShowAnnouncement(false);
+        setViewingReport(false);
         setShowApplicant(true);
       }}
       style={{
@@ -981,7 +1083,32 @@ const handleHiredApplicantClick = (applicant) => {
     >
       View Applicants
     </button>
-    
+    <button
+        onClick={() => {
+          setSelectedUserType("Report");
+          setShowDashboard(false);
+          setIsUserClassVisible(false);
+          setUserApproval(false);
+          setShowDeletedFiles(false);
+          setHistoryVisible(false);
+          setShowAnnouncement(false);
+          setShowApplicant(false);
+          setViewingReport(true);
+        }}
+        style={{
+          display: "block",
+          width: "100%",
+          marginBottom: "10px",
+          padding: "10px",
+          backgroundColor: selectedUserType === "Report" ? "#007bff" : "#ddd",
+          color: "#fff",
+          border: "none",
+          borderRadius: "5px",
+          cursor: "pointer",
+        }}
+      >
+        View Reports
+      </button>
 
     <button
       onClick={() => {
@@ -992,6 +1119,7 @@ const handleHiredApplicantClick = (applicant) => {
         setShowDeletedFiles(false);
         setHistoryVisible(false);
         setShowAnnouncement(false);
+        setViewingReport(false)
       }}
       style={{
         display: "block",
@@ -1204,7 +1332,7 @@ const handleHiredApplicantClick = (applicant) => {
 
 
       {/* User Table */}
-      {!isUserClassVisible && !isUserApproval && !showDashboard && !showDeletedFiles && !historyVisible && !announcementVisible && (
+      {!isUserClassVisible && !isUserApproval && !showDashboard && !showDeletedFiles && !historyVisible && !announcementVisible && !viewingReport && selectedUserType !== "Report" && (
         <div className="user" style={{ border: "1px solid #ddd", borderRadius: "5px", padding: "20px" }}>
         <h3>{selectedUserType}</h3>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -1322,49 +1450,107 @@ const handleHiredApplicantClick = (applicant) => {
 
             {selectedUserType === "Applicants" && !isUserClassVisible ? (
   <>
-    <p>
-      <strong>Name:</strong> {selectedUser.name}
-    </p>
-    <p>
-      <strong>Email:</strong> {selectedUser.email}
-    </p>
-    <p>
-      <strong>Resume:</strong>{" "}
-      <a href={selectedUser.resumeURL} target="_blank" rel="noopener noreferrer">
-        View Resume
-      </a>
-    </p>
-    <h5>Submissions</h5>
-    <ul>
-      {selectedUser.submissions?.map((submission, index) => (
-        <li key={index}>
-          <strong>Live Demo:</strong>{" "}
-          <a href={submission.liveDemoLink} target="_blank" rel="noopener noreferrer">
-            View
-          </a>{" "}
-          | <strong>Demo Video:</strong>{" "}
-          <a href={submission.demoVideoLink} target="_blank" rel="noopener noreferrer">
-            Watch
-          </a>
-        </li>
+
+    <div>
+      <img
+        src={selectedUser.profilePicURL}
+        alt={`${selectedUser.name}'s Profile`}
+        style={{ width: "150px", borderRadius: "50%" }}
+      />
+      <p><strong>Name:</strong> {selectedUser.name}</p>
+      <p><strong>Email:</strong> {selectedUser.email}</p>
+      <p><strong>Experience:</strong> {selectedUser.experience}</p>
+      <p><strong>GitHub:</strong> <a href={selectedUser.githubRepo} target="_blank" rel="noopener noreferrer">{selectedUser.githubRepo}</a></p>
+
+      <h3>Selected Jobs</h3>
+      <ul>
+        {selectedUser.selectedJobs?.map((job, index) => (
+          <li key={index}>{job}</li>
+        ))}
+      </ul>
+
+      <h3>Skills</h3>
+      <ul>
+        {Object.entries(selectedUser.skills || {}).map(([skill, hasSkill]) => (
+          hasSkill ? <li key={skill}>{skill}</li> : null
+        ))}
+      </ul>
+
+      <h3>Certifications</h3>
+
+      {Object.entries(selectedUser.certifications || {}).map(([category, certArray]) => (
+        <div key={category}>
+          <h4>{category}</h4>
+          {certArray.length === 0 ? (
+            <p>No certifications.</p>
+          ) : (
+            certArray.map((cert, index) => (
+              <div key={index} style={{ border: "1px solid #ccc", padding: "10px", marginBottom: "10px" }}>
+                <img src={cert.imageURL} alt={cert.name} style={{ width: "200px" }} />
+                <p><strong>Name:</strong> {cert.name}</p>
+                <p><strong>Issuer:</strong> {cert.issuer}</p>
+                <p><strong>Issue Date:</strong> {cert.issueDate}</p>
+                <p><strong>Expiry Date:</strong> {cert.expiryDate}</p>
+                <p><strong>Credential ID:</strong> {cert.credentialID}</p>
+              </div>
+            ))
+          )}
+        </div>
       ))}
-    </ul>
-    <h5>Applied Jobs</h5>
-    <ul>
-      {selectedUser.appliedJobs?.map((job, index) => (
-        <li key={index}>
-          <p>
-            <strong>Job Title:</strong> {job.title}
-          </p>
-          <p>
-            <strong>Location:</strong> {job.location}
-          </p>
-          <p>
-            <strong>Applied At:</strong> {job.appliedAt?.toDate().toLocaleString() || "N/A"}
-          </p>
-        </li>
-      ))}
-    </ul>
+
+      {selectedUser.submissions && selectedUser.submissions.length > 0 && (
+        <>
+          <h5>Submissions</h5>
+          <ul>
+            {selectedUser.submissions.map((submission, index) => (
+              <li key={index}>
+                <strong>Live Demo:</strong>{" "}
+                <a href={submission.liveDemoLink} target="_blank" rel="noopener noreferrer">
+                  View
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+
+
+    <div className="user-applications">
+      <h3>Applied Jobs</h3>
+      {appliedJobs.length > 0 ? (
+        <ul>
+          {appliedJobs.map((job, index) => (
+            <li key={`applied-${job.id || index}`} className="job-item">
+              <p><strong>Job Title:</strong> {job.title}</p>
+              <p><strong>Location:</strong> {job.location}</p>
+              <p><strong>Applied At:</strong> {job.appliedAt?.toDate ? job.appliedAt.toDate().toLocaleString() : "N/A"}</p>
+              <p><strong>Status:</strong> {job.status}</p>
+              <p><small>Application ID: {job.applicantId}</small></p>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>No applied jobs found.</p>
+      )}
+
+      <h3>Hired Jobs</h3>
+      {hiredJobs.length > 0 ? (
+        <ul>
+          {hiredJobs.map((job, index) => (
+            <li key={`hired-${job.id || index}`} className="job-item">
+              <p><strong>Job Title:</strong> {job.title}</p>
+              <p><strong>Location:</strong> {job.location}</p>
+              <p><strong>Hired At:</strong> {job.appliedAt?.toDate ? job.appliedAt.toDate().toLocaleString() : "N/A"}</p>
+              <p><strong>Status:</strong> {job.status}</p>
+              <p><small>Application ID: {job.applicantId}</small></p>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>No hired jobs found.</p>
+      )}
+    </div>
   </>
 ) : selectedUserType !== "Applicants" &&  !isUserClassVisible ? (
   <>
@@ -1979,7 +2165,7 @@ const handleHiredApplicantClick = (applicant) => {
 
 
       {/* View User Acconts To Be Approve Section */}
-      {!showDeletedFiles && !isUserClassVisible && !selectedUserType && !showDashboard && !historyVisible && !announcementVisible &&(
+      {!showDeletedFiles && !isUserClassVisible && !selectedUserType && !showDashboard && !historyVisible && !announcementVisible && !viewingReport &&(
         <div  style={{ border: "1px solid #ddd", borderRadius: "5px", padding: "20px", fontFamily: "Arial, sans-serif" }}>
             <h3>Users Pending Approval</h3>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -2034,7 +2220,7 @@ const handleHiredApplicantClick = (applicant) => {
         </div>
     )}
     {/* Archives Section */}
-    {showDeletedFiles && !selectedUserType && !isUserClassVisible && !showDashboard && !historyVisible && !announcementVisible &&(
+    {showDeletedFiles && !selectedUserType && !isUserClassVisible && !showDashboard && !historyVisible && !announcementVisible && !viewingReport &&(
         <div  style={{ border: "1px solid #ddd", borderRadius: "5px", padding: "20px", fontFamily: "Arial, sans-serif" }}>
             <h3>Deleted Files</h3>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -2087,7 +2273,7 @@ const handleHiredApplicantClick = (applicant) => {
 
 
       {/* Announcement tab */}
-      {announcementVisible && !showDashboard && !historyVisible && !isUserApproval && !showDeletedFiles && !selectedUserType && !isUserClassVisible && (
+      {announcementVisible && !showDashboard && !historyVisible && !isUserApproval && !showDeletedFiles && !selectedUserType && !isUserClassVisible && !viewingReport && (
         <div
           style={{
             marginTop: "20px",
@@ -2188,12 +2374,104 @@ const handleHiredApplicantClick = (applicant) => {
       </div>
 </div>
 
-
 </div>
+{selectedUserType === "Report" && (
+  <div style={{ padding: '40px 20px', maxWidth: '800px', margin: '0 auto' }}>
+    <h2 style={{ marginBottom: '10px' }}>📋 Reports</h2>
+    <p style={{ color: '#666', marginBottom: '30px' }}>
+      Review user-submitted reports regarding policy violations or inappropriate behavior.
+    </p>
 
+    {reportShow.length === 0 ? (
+      <p style={{ textAlign: 'center', color: 'gray' }}>No reports available.</p>
+    ) : (
+      reportShow.map((report, index) => {
+        const isUnread = report.status === 'pending';
+        const isApplicantReport = report.hasOwnProperty('applicantName');
+        const isEmployerReport = report.hasOwnProperty('companyName');
+        const isSelected = viewingReport === report;
 
-    </>
-  );
+        return (
+          <div
+            key={index}
+            onClick={() => {
+              setViewingReport(isSelected ? null : report); // Toggle selection
+              const updated = [...reportShow];
+              updated[index].status = 'read';
+              setShowReport(updated);
+            }}
+            style={{
+              backgroundColor: isSelected ? '#f9f9f9' : '#fff',
+              border: '1px solid #ddd',
+              borderLeft: `5px solid ${isUnread ? '#e53935' : '#43a047'}`,
+              borderRadius: '10px',
+              padding: '18px 20px',
+              marginBottom: '18px',
+              cursor: 'pointer',
+              boxShadow: isSelected
+                ? '0 4px 12px rgba(0,0,0,0.1)'
+                : '0 2px 6px rgba(0,0,0,0.05)',
+              transition: 'all 0.2s ease-in-out',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <strong style={{ fontSize: '16px' }}>
+                {isEmployerReport ? report.reporterName : report.applicantName}
+              </strong>
+              <span
+                style={{
+                  backgroundColor: isUnread ? '#ffebee' : '#e8f5e9',
+                  color: isUnread ? '#c62828' : '#2e7d32',
+                  padding: '4px 10px',
+                  borderRadius: '12px',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                }}
+              >
+                {isUnread ? 'Pending' : 'Read'}
+              </span>
+            </div>
+
+            <p style={{ marginTop: '6px', fontStyle: 'italic', color: '#555' }}>
+              {isEmployerReport
+                ? `Job Title: ${report.jobTitle}`
+                : `Violation: ${report.violationType}`}
+            </p>
+
+            {isSelected && (
+              <div style={{ marginTop: '15px', fontSize: '14px', color: '#333' }}>
+                {isEmployerReport ? (
+                  <>
+                    <p><strong>Company:</strong> {report.companyName}</p>
+                    <p><strong>Reporter:</strong> {report.reporterName}</p>
+                    <p><strong>Email:</strong> {report.reporterEmail}</p>
+                    <p><strong>Employer ID:</strong> {report.employerId}</p>
+                    <p><strong>Job ID:</strong> {report.jobId}</p>
+                    <p><strong>Reason:</strong> {report.reason}</p>
+                    <p><strong>Details:</strong> {report.details}</p>
+                    <p><strong>Created At:</strong> {report.createdAt.toDate().toLocaleString()}</p>
+                  </>
+                ) : (
+                  <>
+                    <p><strong>Applicant:</strong> {report.applicantName}</p>
+                    <p><strong>Email:</strong> {report.applicantEmail}</p>
+                    <p><strong>Applicant ID:</strong> {report.applicantId}</p>
+                    <p><strong>Reported By:</strong> {report.reportedBy}</p>
+                    <p><strong>Violation:</strong> {report.violationType}</p>
+                    <p><strong>Details:</strong> {report.details}</p>
+                    <p><strong>Reported At:</strong> {new Date(report.reportedAt).toLocaleString()}</p>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })
+    )}
+  </div>
+)}
+  </>
+);
 };
 
 
