@@ -426,7 +426,87 @@ const EmployerProfile = () => {
     });
     const [profilePic, setProfilePic] = useState(null);
     const [uploading, setUploading] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [reportData, setReportData] = useState({
+    violationType: '',
+    details: ''
+    });
+    const [reportError, setReportError] = useState('');
+    const [reportSubmitting, setReportSubmitting] = useState(false);
+    const [reportSuccess, setReportSuccess] = useState(false);
 
+
+    const handleSubmitReport = async () => {
+        // Reset error state
+        setReportError('');
+      
+        // Validate inputs
+        if (!reportData.violationType) {
+          setReportError('Please select a violation type.');
+          return;
+        }
+      
+        if (!reportData.details || reportData.details.trim().length < 10) {
+          setReportError('Please provide detailed information about the violation (minimum 10 characters).');
+          return;
+        }
+      
+        // Validate applicant
+        if (!selectedApplicant || !selectedApplicant.id) {
+          setReportError('No applicant selected for reporting.');
+          return;
+        }
+      
+        try {
+          setReportSubmitting(true);
+      
+          // Reference to the "job_reports" collection
+          const reportsRef = collection(db, "job_reports");
+          const userId = auth.currentUser.uid;
+      
+          // Add new report document
+          console.log('Submitting report:', {
+            applicantId: selectedApplicant.id,
+            applicantName: selectedApplicant.name,
+            applicantEmail: selectedApplicant.email,
+            violationType: reportData.violationType,
+            details: reportData.details,
+            reportedBy: userId,
+            reportedAt: new Date().toISOString(),
+            status: 'pending'
+          });
+          await addDoc(reportsRef, {
+            applicantId: selectedApplicant.id,
+            applicantName: selectedApplicant.name,
+            applicantEmail: selectedApplicant.email,
+            violationType: reportData.violationType,
+            details: reportData.details,
+            reportedBy: userId || 'anonymous', // Replace with actual current user info
+            reportedAt: new Date().toISOString(), // Or use Timestamp.now() for Firestore timestamps
+            status: 'pending'
+          });
+      
+          // Simulate API call or server processing
+          await new Promise(resolve => setTimeout(resolve, 1000));
+      
+          // Show success message
+          setReportSuccess(true);
+      
+          // Reset form and close modal after a delay
+          setTimeout(() => {
+            setReportData({ violationType: '', details: '' });
+            setReportSuccess(false);
+            setShowReportModal(false);
+          }, 2000);
+      
+        } catch (error) {
+          console.error('Error submitting report:', error);
+          setReportError('Failed to submit report. Please try again.');
+        } finally {
+          setReportSubmitting(false);
+        }
+      };
+      
     useEffect(() => {
         const fetchEmployerData = async () => {
             if (auth.currentUser) {
@@ -711,6 +791,7 @@ const EmployerProfile = () => {
     };
     const ApplicantDetailsModal = ({ cert, onClose }) => {
   if (!cert) return null;
+
 
   return (
     <div style={{
@@ -1645,6 +1726,231 @@ const EmployerProfile = () => {
                                 &times;
                             </button>
                         </div>
+
+                        
+                    <div style={{ 
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    padding: '10px 25px',
+                    borderTop: '1px solid #eee',
+                    backgroundColor: '#f8f9fa',
+                    borderBottomLeftRadius: '10px',
+                    borderBottomRightRadius: '10px'
+                }}>
+                    <button
+                        onClick={() => setShowReportModal(true)}
+                        style={{
+                            backgroundColor: '#ff6b6b',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            padding: '8px 16px',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            transition: 'background-color 0.2s'
+                        }}
+                    >
+                        <span style={{ marginRight: '8px' }}>⚠️</span>
+                        Report Applicant
+                    </button>
+                </div>
+                
+
+{/* Report Modal */}
+{showReportModal && (
+    <div className="report-modal-overlay" style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1100
+    }}>
+        <div className="report-modal-content" style={{
+            backgroundColor: '#fff',
+            borderRadius: '10px',
+            width: '90%',
+            maxWidth: '500px',
+            boxShadow: '0 5px 20px rgba(0, 0, 0, 0.3)',
+            padding: '0'
+        }}>
+            <div style={{
+                padding: '15px 20px',
+                borderBottom: '1px solid #eee',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                backgroundColor: '#f8d7da',
+                borderTopLeftRadius: '10px',
+                borderTopRightRadius: '10px'
+            }}>
+                <h4 style={{
+                    margin: 0,
+                    fontSize: '18px',
+                    fontWeight: '600',
+                    color: '#721c24',
+                    display: 'flex',
+                    alignItems: 'center'
+                }}>
+                    <span style={{ marginRight: '10px' }}>⚠️</span>
+                    Report Guideline Violation
+                </h4>
+                <button
+                    onClick={() => setShowReportModal(false)}
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '22px',
+                        cursor: 'pointer',
+                        color: '#721c24'
+                    }}
+                >
+                    &times;
+                </button>
+            </div>
+            
+            <div style={{ padding: '20px' }}>
+                <p style={{ 
+                    margin: '0 0 15px 0',
+                    fontSize: '14px',
+                    color: '#555',
+                    lineHeight: '1.5'
+                }}>
+                    You are about to report <strong>{selectedApplicant.name}</strong> for violating our platform guidelines. 
+                    Please provide specific details about the violation.
+                </p>
+                
+                <div style={{ marginBottom: '15px' }}>
+                    <label 
+                        htmlFor="violation-type" 
+                        style={{ 
+                            display: 'block',
+                            marginBottom: '5px',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            color: '#333'
+                        }}
+                    >
+                        Violation Type:
+                    </label>
+                    <select 
+                        id="violation-type"
+                        value={reportData.violationType}
+                        onChange={(e) => setReportData({...reportData, violationType: e.target.value})}
+                        style={{
+                            width: '100%',
+                            padding: '10px',
+                            borderRadius: '4px',
+                            border: '1px solid #ddd',
+                            fontSize: '14px',
+                            color: '#333'
+                        }}
+                    >
+                        <option value="">Select violation type</option>
+                        <option value="false_information">False Information</option>
+                        <option value="impersonation">Impersonation</option>
+                        <option value="inappropriate_content">Inappropriate Content</option>
+                        <option value="fake_credentials">Fake Credentials</option>
+                        <option value="spam">Spam Application</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div style={{ marginBottom: '20px' }}>
+                    <label 
+                        htmlFor="report-details" 
+                        style={{ 
+                            display: 'block',
+                            marginBottom: '5px',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            color: '#333'
+                        }}
+                    >
+                        Details:
+                    </label>
+                    <textarea 
+                        id="report-details"
+                        value={reportData.details}
+                        onChange={(e) => setReportData({...reportData, details: e.target.value})}
+                        placeholder="Please provide specific details about the violation..."
+                        style={{
+                            width: '100%',
+                            padding: '10px',
+                            borderRadius: '4px',
+                            border: '1px solid #ddd',
+                            fontSize: '14px',
+                            minHeight: '120px',
+                            resize: 'vertical',
+                            color: '#333',
+                            fontFamily: 'inherit'
+                        }}
+                    />
+                </div>
+                
+                {reportError && (
+                    <div style={{
+                        backgroundColor: '#f8d7da',
+                        color: '#721c24',
+                        padding: '10px',
+                        borderRadius: '4px',
+                        marginBottom: '15px',
+                        fontSize: '14px'
+                    }}>
+                        {reportError}
+                    </div>
+                )}
+                
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between'
+                }}>
+                    <button
+                        onClick={() => setShowReportModal(false)}
+                        style={{
+                            backgroundColor: '#f1f2f6',
+                            color: '#555',
+                            border: 'none',
+                            borderRadius: '4px',
+                            padding: '10px 20px',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSubmitReport}
+                        style={{
+                            backgroundColor: '#dc3545',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            padding: '10px 20px',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center'
+                        }}
+                    >
+                        <span style={{ marginRight: '5px' }}>📢</span>
+                        Submit Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+)}
+                        
                         
                         <div style={{ padding: '25px' }}>
                             {/* Profile and basic info */}
@@ -1740,6 +2046,7 @@ const EmployerProfile = () => {
                                 </div>
                             </div>
                             
+                            
                             <div style={{ 
                                 display: 'grid',
                                 gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
@@ -1831,6 +2138,7 @@ const EmployerProfile = () => {
                                     </div>
                                 )}
                             </div>
+                            
                             
                             {/* Social links section */}
                             {selectedApplicant.socialLinks && Object.keys(selectedApplicant.socialLinks).length > 0 && (
@@ -1955,6 +2263,7 @@ const EmployerProfile = () => {
                                     </div>
                                 </div>
                             )}
+                            
 
                             {/* Certifications section */}
                             <div style={{ 
@@ -2132,6 +2441,8 @@ const EmployerProfile = () => {
                             )}
                         </div>
 
+                        
+
                         {/* Contact applicant section */}
                         <div style={{ 
                             marginBottom: '25px',
@@ -2261,8 +2572,10 @@ const EmployerProfile = () => {
     }}
   />
 )}
-
+                
                 </div>
+                
+                
             </div>
         )}
     </div>
